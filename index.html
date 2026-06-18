@@ -1,0 +1,1319 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ระบบ POS - เกิบ Sneaker & Cleaning</title>
+    <!-- Tailwind CSS for Beautiful UI -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts (Sarabun & Mitr for Premium Thai feel) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Mitr:wght@300;400;500;600&family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        body {
+            font-family: 'Sarabun', sans-serif;
+        }
+        h1, h2, h3, h4, .font-title {
+            font-family: 'Mitr', sans-serif;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col">
+
+    <!-- Header / Navigation -->
+    <header class="bg-gradient-to-r from-teal-600 to-emerald-600 text-white shadow-md">
+        <div class="max-w-7xl mx-auto px-4 py-4 flex flex-col sm:flex-row justify-between items-center gap-4">
+            <div class="flex items-center gap-3">
+                <div class="bg-white p-2.5 rounded-full shadow-inner flex items-center justify-center">
+                    <svg class="w-8 h-8 text-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"></path>
+                    </svg>
+                </div>
+                <div>
+                    <h1 class="text-2xl font-bold tracking-wide">เกิบ Sneaker & Cleaning</h1>
+                    <p class="text-xs text-teal-100">ระบบจัดการข้อมูลหน้าร้านและการขาย</p>
+                </div>
+            </div>
+            <div class="flex items-center gap-4">
+                <div class="text-right hidden md:block">
+                    <p class="text-xs text-teal-100">เวลาในระบบปัจจุบัน</p>
+                    <p id="current-time-display" class="font-semibold text-sm">--:--:--</p>
+                </div>
+                <div class="flex gap-2">
+                    <button onclick="switchTab('pos')" id="tab-btn-pos" class="bg-white text-teal-700 px-4 py-2 rounded-lg font-medium shadow text-sm transition-all flex items-center gap-2">
+                        <i class="fas fa-cash-register"></i> บันทึกหน้าร้าน
+                    </button>
+                    <button onclick="switchTab('history')" id="tab-btn-history" class="bg-teal-700 hover:bg-teal-800 text-white px-4 py-2 rounded-lg font-medium text-sm transition-all flex items-center gap-2">
+                        <i class="fas fa-list-alt"></i> รายการขายวันนี้
+                    </button>
+                    <button onclick="switchTab('settings')" id="tab-btn-settings" class="bg-teal-700 hover:bg-teal-800 text-white px-3 py-2 rounded-lg font-medium text-sm transition-all flex items-center justify-center">
+                        <i class="fas fa-cog"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content Area -->
+    <main class="flex-grow max-w-7xl w-full mx-auto p-4 sm:p-6">
+        
+        <!-- TOAST NOTIFICATION -->
+        <div id="toast-notification" class="hidden fixed bottom-5 right-5 z-50 bg-slate-900 text-white px-6 py-4 rounded-xl shadow-2xl flex items-center gap-3 transition-all transform translate-y-10 opacity-0">
+            <span id="toast-icon" class="text-emerald-400 text-xl"><i class="fas fa-check-circle"></i></span>
+            <span id="toast-message" class="text-sm font-medium">ทำรายการสำเร็จ!</span>
+        </div>
+
+        <!-- 4 PM/10 PM SPREADSHEET ALERT BANNER -->
+        <div id="closing-alert" class="hidden mb-6 bg-amber-50 border-l-4 border-amber-500 p-4 rounded-r-lg shadow-sm">
+            <div class="flex justify-between items-center">
+                <div class="flex items-center gap-3">
+                    <span class="text-amber-500 text-xl"><i class="fas fa-clock"></i></span>
+                    <div>
+                        <h3 class="font-bold text-amber-900">ใกล้เวลาหรือเลยเวลาปิดรอบประจำวัน (22:00 น.) แล้ว!</h3>
+                        <p class="text-sm text-amber-700">กรุณาตรวจสอบข้อมูลการขาย สรุปยอด และกดส่งข้อมูลไปยัง Google Sheet เพื่อเก็บข้อมูลรายวัน</p>
+                    </div>
+                </div>
+                <button onclick="switchTab('history')" class="bg-amber-500 hover:bg-amber-600 text-white px-4 py-1.5 rounded-md text-xs font-semibold shadow transition-all">
+                    ไปหน้าสรุปยอด
+                </button>
+            </div>
+        </div>
+
+        <!-- TAB 1: POS SYSTEM -->
+        <section id="tab-content-pos" class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <!-- Left Side: POS Entry Form -->
+            <div class="lg:col-span-2 bg-white rounded-2xl shadow-sm border border-slate-100 p-6">
+                <div class="flex justify-between items-center border-b pb-4 mb-6">
+                    <h2 class="text-lg font-bold text-slate-800 flex items-center gap-2">
+                        <i class="fas fa-plus-circle text-teal-600"></i> สร้างออเดอร์ใหม่
+                    </h2>
+                    <span class="text-xs bg-slate-100 text-slate-600 px-3 py-1.5 rounded-full font-semibold" id="next-order-id-label">
+                        ออเดอร์ถัดไป: LOADING...
+                    </span>
+                </div>
+
+                <form id="order-form" onsubmit="event.preventDefault();" class="space-y-6">
+                    <!-- Date and Time Fields -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-500 mb-1.5">วันที่ออเดอร์</label>
+                            <input type="date" id="order-date" required class="w-full bg-slate-50 border border-slate-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-500 mb-1.5">เวลาที่รับบริการ</label>
+                            <input type="time" id="order-time" required class="w-full bg-slate-50 border border-slate-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500">
+                        </div>
+                    </div>
+
+                    <!-- Customer Information -->
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-500 mb-1.5">ชื่อ-นามสกุล ลูกค้า (หรือช่องทางติดต่อ)</label>
+                        <div class="relative">
+                            <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400">
+                                <i class="fas fa-user text-sm"></i>
+                            </span>
+                            <input type="text" id="customer-name" placeholder="ระบุชื่อลูกค้า เช่น คุณสมใจ ชื่นชอบ" required class="w-full bg-slate-50 border border-slate-200 rounded-lg pl-10 pr-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500">
+                        </div>
+                    </div>
+
+                    <!-- Service Description -->
+                    <div>
+                        <div class="flex justify-between items-center mb-1.5">
+                            <label class="block text-xs font-semibold text-slate-500">เลือกประเภทบริการ</label>
+                            <button type="button" onclick="switchTab('settings')" class="text-xs text-teal-600 hover:underline">
+                                <i class="fas fa-plus-circle"></i> ตั้งค่าเพิ่มชนิดบริการ
+                            </button>
+                        </div>
+                        
+                        <!-- Quick Service Selector Grid -->
+                        <div id="quick-services-grid" class="grid grid-cols-2 sm:grid-cols-3 gap-2.5 max-h-48 overflow-y-auto mb-4 p-1">
+                            <!-- Populated by JavaScript -->
+                        </div>
+
+                        <!-- Manual/Additional Service Note -->
+                        <label class="block text-xs font-semibold text-slate-500 mb-1.5">รายละเอียดบริการเพิ่มเติม / แบรนด์รองเท้า</label>
+                        <textarea id="service-details" rows="3" placeholder="ระบุแบรนด์ สี หรือจุดชำรุดเป็นพิเศษ เช่น Adidas Ultraboost สีขาว ซักคราบเหลืองใต้พื้น" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"></textarea>
+                    </div>
+
+                    <!-- Price Input -->
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-500 mb-1.5">ราคาค่าบริการรวม (บาท)</label>
+                        <div class="relative">
+                            <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400 font-bold">฿</span>
+                            <input type="number" id="service-price" placeholder="0" min="0" required class="w-full bg-slate-50 border border-slate-200 rounded-lg pl-8 pr-4 py-3 font-bold text-lg text-emerald-600 focus:outline-none focus:ring-2 focus:ring-teal-500">
+                        </div>
+                    </div>
+
+                    <!-- Save Buttons with separation logic -->
+                    <div class="pt-4 border-t flex flex-col sm:flex-row gap-3">
+                        <button type="button" onclick="resetOrderForm()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 py-3 px-4 rounded-xl text-sm font-semibold transition-all">
+                            <i class="fas fa-eraser"></i> ล้างฟอร์ม
+                        </button>
+                        
+                        <button type="button" onclick="handleSaveOrder(false)" class="flex-1 bg-slate-800 hover:bg-slate-700 text-white py-3 px-4 rounded-xl text-sm font-semibold transition-all flex items-center justify-center gap-2 shadow">
+                            <i class="fas fa-hdd"></i> บันทึกเข้าระบบอย่างเดียว
+                        </button>
+                        
+                        <button type="button" onclick="handleSaveOrder(true)" class="flex-1 bg-gradient-to-r from-teal-600 to-emerald-600 hover:from-teal-700 hover:to-emerald-700 text-white py-3 px-6 rounded-xl text-sm font-bold shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2">
+                            <i class="fas fa-receipt text-base"></i> บันทึก + ออกใบเสร็จย่อ
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Right Side: Services Summary & Analytics Preview -->
+            <div class="space-y-6">
+                <!-- Realtime Stat Counter Today -->
+                <div class="bg-gradient-to-br from-teal-700 to-emerald-800 text-white rounded-2xl p-6 shadow-sm">
+                    <h3 class="text-sm font-bold opacity-80 uppercase tracking-wider mb-4">ยอดขายวันนี้</h3>
+                    <div class="flex items-baseline gap-1.5 mb-2">
+                        <span class="text-3xl font-extrabold" id="stat-total-revenue">0.00</span>
+                        <span class="text-sm opacity-80">บาท</span>
+                    </div>
+                    
+                    <div class="grid grid-cols-2 gap-4 mt-6 pt-4 border-t border-teal-600/50">
+                        <div>
+                            <p class="text-xs opacity-75">ออเดอร์ทั้งหมด</p>
+                            <p class="text-lg font-bold mt-0.5" id="stat-order-count">0 รายการ</p>
+                        </div>
+                        <div>
+                            <p class="text-xs opacity-75">เฉลี่ยต่อออเดอร์</p>
+                            <p class="text-lg font-bold mt-0.5" id="stat-avg-price">0 บาท</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Fast Actions Widget -->
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-5">
+                    <h3 class="text-sm font-bold text-slate-800 mb-4 flex items-center gap-2">
+                        <i class="fas fa-bolt text-amber-500"></i> ทางลัดการทำรายการ
+                    </h3>
+                    <div class="space-y-2.5">
+                        <button onclick="quickAction('ซักแห้งด่วน 24 ชม', 350)" class="w-full flex justify-between items-center p-3 bg-slate-50 hover:bg-teal-50 rounded-xl border border-slate-100 hover:border-teal-200 transition-all text-left text-xs">
+                            <span class="font-medium text-slate-700"><i class="fas fa-star text-amber-400 mr-1.5"></i> ซักด่วนพรีเมียม (24 ชม.)</span>
+                            <span class="font-bold text-teal-600">350 ฿</span>
+                        </button>
+                        <button onclick="quickAction('ทำสีและสปาเต็มระบบ', 1200)" class="w-full flex justify-between items-center p-3 bg-slate-50 hover:bg-teal-50 rounded-xl border border-slate-100 hover:border-teal-200 transition-all text-left text-xs">
+                            <span class="font-medium text-slate-700"><i class="fas fa-magic text-purple-500 mr-1.5"></i> ทำสีสปาเต็มระบบ</span>
+                            <span class="font-bold text-teal-600">1,200 ฿</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Google Sheet Integration Status -->
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-5">
+                    <h3 class="text-sm font-bold text-slate-800 mb-2 flex items-center gap-2">
+                        <i class="fab fa-google-drive text-emerald-600"></i> สเตตัสการเชื่อมต่อ Google Sheet
+                    </h3>
+                    <div class="space-y-3 mt-3">
+                        <div class="flex items-center justify-between text-xs">
+                            <span class="text-slate-500">สถานะ API Web App:</span>
+                            <span id="sheet-api-status" class="px-2.5 py-1 rounded-full font-bold bg-amber-100 text-amber-700">ไม่ได้ตั้งค่า URL</span>
+                        </div>
+                        <p class="text-[11px] text-slate-400 leading-relaxed">
+                            ตั้งค่า URL ของกูเกิลชีตได้ที่ปุ่มฟันเฟือง <i class="fas fa-cog"></i> มุมขวาบน เพื่อส่งข้อมูลอัปเดตอัตโนมัติเมื่อกดสรุปยอดรายวัน
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB 2: HISTORY & CLOSE DAY -->
+        <section id="tab-content-history" class="hidden space-y-6">
+            
+            <!-- Close Day Actions & Summary -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <!-- Daily closing controls -->
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 md:col-span-2">
+                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+                        <div>
+                            <h2 class="text-lg font-bold text-slate-800 flex items-center gap-2">
+                                <i class="fas fa-calendar-check text-emerald-600"></i> สรุปยอดประวัติการขาย
+                            </h2>
+                            <p class="text-xs text-slate-500 mt-1">สรุปข้อมูลการรับงานบริการแยกตามวัน</p>
+                        </div>
+                        <!-- Manual Date Filter -->
+                        <div class="flex items-center gap-2">
+                            <span class="text-xs font-semibold text-slate-500 whitespace-nowrap">เลือกวันที่ดู:</span>
+                            <input type="date" id="history-date-filter" onchange="loadOrdersHistory()" class="bg-slate-100 border border-slate-200 rounded-lg px-3 py-1.5 text-xs focus:ring-2 focus:ring-teal-500">
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+                        <div class="bg-slate-50 p-4 rounded-xl border border-slate-100">
+                            <span class="text-xs font-medium text-slate-500">จำนวนออเดอร์</span>
+                            <p class="text-xl font-bold text-slate-800 mt-1" id="history-order-count">0 ออเดอร์</p>
+                        </div>
+                        <div class="bg-slate-50 p-4 rounded-xl border border-slate-100">
+                            <span class="text-xs font-medium text-slate-500">ยอดเงินรวม</span>
+                            <p class="text-xl font-bold text-emerald-600 mt-1" id="history-total-revenue">฿0.00</p>
+                        </div>
+                        <div class="bg-slate-50 p-4 rounded-xl border border-slate-100">
+                            <span class="text-xs font-medium text-slate-500">เป้าหมายยอดปิดวัน</span>
+                            <p class="text-xl font-bold text-teal-600 mt-1">฿3,000.00</p>
+                        </div>
+                    </div>
+
+                    <!-- Action buttons -->
+                    <div class="flex flex-wrap gap-3">
+                        <button onclick="exportToGoogleSheet()" class="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 px-4 rounded-xl text-sm transition-all shadow-md hover:shadow-lg flex items-center justify-center gap-2 min-w-[200px]">
+                            <i class="fab fa-google text-sm"></i> ส่งข้อมูลวันนี้ไป Google Sheet
+                        </button>
+                        <button onclick="triggerManualDayClose()" class="bg-slate-900 hover:bg-slate-800 text-white font-semibold py-3 px-5 rounded-xl text-sm transition-all flex items-center justify-center gap-2">
+                            <i class="fas fa-power-off text-red-400"></i> บังคับปิดยอดวัน (รีเซ็ตเตรียมเริ่มรอบใหม่)
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Service Breakdown Widget -->
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-6">
+                    <h3 class="text-sm font-bold text-slate-800 mb-4 flex items-center gap-2">
+                        <i class="fas fa-chart-pie text-teal-600"></i> สัดส่วนบริการในวันที่เลือก
+                    </h3>
+                    <div id="service-breakdown-container" class="space-y-3 max-h-52 overflow-y-auto pr-1">
+                        <!-- Dynamic list of services sold and count -->
+                        <p class="text-xs text-slate-400 text-center py-6">ไม่มีรายการจำหน่ายในวันที่เลือก</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- List of orders table -->
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-6">
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="text-base font-bold text-slate-800 flex items-center gap-2">
+                        <i class="fas fa-list text-slate-600"></i> รายการออเดอร์ในระบบ
+                    </h3>
+                    <button onclick="askClearAllOrders()" class="text-xs text-red-500 hover:text-red-700 font-semibold transition-all">
+                        <i class="fas fa-trash-alt mr-1"></i> ล้างข้อมูลออเดอร์ทั้งหมดในเครื่อง
+                    </button>
+                </div>
+
+                <!-- Table layout for Desktop / Card layout for mobile -->
+                <div class="hidden md:block overflow-x-auto">
+                    <table class="w-full text-left text-sm border-collapse">
+                        <thead>
+                            <tr class="border-b text-xs font-bold text-slate-400 uppercase">
+                                <th class="pb-3 pl-2">เลขที่ออเดอร์</th>
+                                <th class="pb-3">เวลา</th>
+                                <th class="pb-3">ชื่อลูกค้า</th>
+                                <th class="pb-3">บริการ</th>
+                                <th class="pb-3">รายละเอียดเพิ่มเติม</th>
+                                <th class="pb-3 text-right pr-2">ราคา (บาท)</th>
+                                <th class="pb-3 text-center">จัดการ/ใบเสร็จ</th>
+                            </tr>
+                        </thead>
+                        <tbody id="orders-table-body" class="divide-y divide-slate-100">
+                            <!-- Dynamic rendering -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Mobile view: list of cards -->
+                <div id="orders-mobile-list" class="block md:hidden space-y-4">
+                    <!-- Dynamic rendering -->
+                </div>
+
+                <!-- Empty state -->
+                <div id="orders-empty-state" class="hidden text-center py-12">
+                    <div class="text-slate-300 text-5xl mb-3"><i class="fas fa-receipt"></i></div>
+                    <p class="text-sm font-semibold text-slate-500">ไม่พบข้อมูลคำสั่งซื้อในวันที่เลือก</p>
+                    <p class="text-xs text-slate-400 mt-1">เพิ่มข้อมูลใหม่ได้ที่แถบ "บันทึกหน้านี้"</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB 3: SETTINGS -->
+        <section id="tab-content-settings" class="hidden grid grid-cols-1 lg:grid-cols-3 gap-6">
+            
+            <!-- Service Options Settings -->
+            <div class="lg:col-span-2 bg-white rounded-2xl shadow-sm border border-slate-100 p-6">
+                <h2 class="text-lg font-bold text-slate-800 border-b pb-4 mb-6 flex items-center gap-2">
+                    <i class="fas fa-shoe-prints text-teal-600"></i> ตั้งค่าบริการของร้าน
+                </h2>
+
+                <form id="new-service-form" onsubmit="handleAddService(event)" class="bg-slate-50 p-4 rounded-xl border mb-6 flex flex-col md:flex-row gap-3">
+                    <div class="flex-grow">
+                        <label class="block text-xs font-semibold text-slate-500 mb-1">ชื่อเรียกบริการ</label>
+                        <input type="text" id="new-service-name" placeholder="เช่น ซักฟื้นฟูสีรองเท้าหนัง" required class="w-full border rounded-lg px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-teal-500">
+                    </div>
+                    <div class="w-full md:w-40">
+                        <label class="block text-xs font-semibold text-slate-500 mb-1">ราคาเริ่มต้น (บาท)</label>
+                        <input type="number" id="new-service-price" placeholder="0" min="0" required class="w-full border rounded-lg px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-teal-500">
+                    </div>
+                    <div class="flex items-end">
+                        <button type="submit" class="w-full md:w-auto bg-teal-600 hover:bg-teal-700 text-white font-bold py-2 px-5 rounded-lg text-xs transition-all flex items-center justify-center gap-2">
+                            <i class="fas fa-plus"></i> เพิ่มตัวเลือก
+                        </button>
+                    </div>
+                </form>
+
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-xs border-collapse">
+                        <thead>
+                            <tr class="border-b text-slate-400 uppercase font-bold">
+                                <th class="pb-2.5 pl-2">ลำดับ</th>
+                                <th class="pb-2.5">ชื่อบริการ</th>
+                                <th class="pb-2.5 text-right pr-4">ราคามาตรฐาน (บาท)</th>
+                                <th class="pb-2.5 text-center">จัดการ</th>
+                            </tr>
+                        </thead>
+                        <tbody id="services-settings-table" class="divide-y divide-slate-100">
+                            <!-- Dynamic services list -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Google Sheets Connection Setup -->
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 space-y-6">
+                <div>
+                    <h2 class="text-base font-bold text-slate-800 border-b pb-3 mb-4 flex items-center gap-2">
+                        <i class="fab fa-google text-emerald-600"></i> ตั้งค่า Google Sheets
+                    </h2>
+                    <p class="text-xs text-slate-500 leading-relaxed mb-4">
+                        เชื่อมต่อแอป POS นี้เข้ากับ Google Sheet ของคุณเพื่อส่งยอดการขายแต่ละวันไปเก็บเป็นสถิติอัตโนมัติ
+                    </p>
+
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-500 mb-1">Google Web App URL</label>
+                            <input type="url" id="sheet-webhook-url" placeholder="https://script.google.com/macros/s/.../exec" class="w-full border border-slate-200 rounded-lg px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-teal-500">
+                            <p class="text-[10px] text-slate-400 mt-1">คัดลอก URL ที่ได้จาก Google Apps Script มากรอกที่นี่</p>
+                        </div>
+                        <button onclick="saveSheetSettings()" class="w-full bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold py-2 px-4 rounded-lg transition-all">
+                            บันทึกการตั้งค่าลิงก์
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Mini Setup Guide -->
+                <div class="bg-slate-50 p-4 rounded-xl border border-slate-200">
+                    <h3 class="text-xs font-bold text-slate-700 mb-2 flex items-center gap-1.5">
+                        <i class="fas fa-question-circle text-teal-600"></i> วิธีการติดตั้งใช้งาน Google Sheet
+                    </h3>
+                    <ol class="text-[11px] text-slate-600 space-y-2 list-decimal pl-4 leading-relaxed font-sans">
+                        <li>เปิด Google Sheet ใหม่ขึ้นมา</li>
+                        <li>ไปที่ <strong>ส่วนขยาย (Extensions)</strong> &gt; <strong>Apps Script</strong></li>
+                        <li>คัดลอกโค้ดสคริปต์ด้านล่างนี้ไปแทนที่โค้ดเดิมทั้งหมด</li>
+                        <li>กด <strong>การทำให้ใช้งานได้ (Deploy)</strong> &gt; <strong>การทำให้ใช้งานได้ใหม่ (New deployment)</strong></li>
+                        <li>เลือกประเภทเป็น <strong>เว็บแอป (Web app)</strong>, ตั้งค่าสิทธิ์ให้ "ทุกคน" เข้าถึงได้ (Anyone) จากนั้นทำการยืนยันสิทธิ์</li>
+                        <li>ก๊อบปี้เว็บแอป URL นำมาใส่ช่องด้านบนแล้วกดบันทึก</li>
+                    </ol>
+
+                    <button onclick="copyAppsScriptCode()" class="w-full mt-3 bg-white hover:bg-slate-100 text-teal-600 border border-teal-200 text-xs font-bold py-2 rounded-lg transition-all flex items-center justify-center gap-1.5">
+                        <i class="fas fa-copy"></i> คัดลอกโค้ดสคริปต์
+                    </button>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- RECEIPT GENERATOR MODAL -->
+    <div id="receipt-modal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-3xl shadow-2xl max-w-md w-full overflow-hidden border border-slate-100 flex flex-col max-h-[90vh]">
+            <!-- Modal Header -->
+            <div class="bg-teal-600 text-white px-6 py-4 flex justify-between items-center">
+                <h3 class="font-bold text-base flex items-center gap-2">
+                    <i class="fas fa-receipt"></i> ใบเสร็จรับเงินดิจิทัล
+                </h3>
+                <button onclick="closeReceiptModal()" class="text-white hover:text-teal-100 transition-all text-lg">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            
+            <!-- Modal Body (Receipt content) -->
+            <div class="p-6 overflow-y-auto space-y-6 bg-slate-50 flex-grow">
+                <!-- Thermal Slip Representation -->
+                <div id="thermal-slip" class="bg-white p-5 rounded-xl shadow-md border border-slate-200 font-mono text-xs text-slate-700 space-y-4 relative overflow-hidden">
+                    <!-- Deco ZigZag simulated with border -->
+                    <div class="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-teal-500 to-emerald-500"></div>
+                    
+                    <!-- Store Header -->
+                    <div class="text-center space-y-1">
+                        <h4 class="font-title text-base font-bold text-slate-900">เกิบ Sneaker & Cleaning</h4>
+                        <p class="text-[10px] text-slate-400">บริการสปาและทำความสะอาดรองเท้าพรีเมียม</p>
+                        <p class="text-[10px] text-slate-400">โทร. 089-XXX-XXXX | LINE: @geebsneaker</p>
+                    </div>
+
+                    <div class="border-b border-dashed my-2"></div>
+
+                    <!-- Meta details -->
+                    <div class="space-y-1">
+                        <div class="flex justify-between">
+                            <span>เลขที่ออเดอร์:</span>
+                            <span id="slip-order-id" class="font-bold text-slate-900">KEB-XXXX</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span>วันที่:</span>
+                            <span id="slip-date">--/--/----</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span>เวลา:</span>
+                            <span id="slip-time">--:-- น.</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span>ลูกค้า:</span>
+                            <span id="slip-customer" class="font-bold text-slate-900">--</span>
+                        </div>
+                    </div>
+
+                    <div class="border-b border-dashed my-2"></div>
+
+                    <!-- Service Description inside Slip -->
+                    <div class="space-y-2">
+                        <p class="font-semibold text-slate-500 text-[10px] uppercase tracking-wider">รายละเอียดบริการ</p>
+                        <div class="bg-slate-50 p-2.5 rounded border border-slate-100">
+                            <p id="slip-details" class="text-slate-800 leading-relaxed break-words whitespace-pre-wrap">--</p>
+                        </div>
+                    </div>
+
+                    <div class="border-b border-dashed my-2"></div>
+
+                    <!-- Prices -->
+                    <div class="space-y-1.5">
+                        <div class="flex justify-between text-sm font-bold text-slate-900">
+                            <span>ยอดรวมชำระทั้งสิ้น:</span>
+                            <span class="text-emerald-600"><span id="slip-total-price">0</span> ฿</span>
+                        </div>
+                        <div class="flex justify-between text-[10px] text-slate-500">
+                            <span>สถานะการชำระ:</span>
+                            <span class="text-emerald-600 font-bold"><i class="fas fa-check-circle"></i> ชำระเงินเรียบร้อย</span>
+                        </div>
+                    </div>
+
+                    <!-- Footer slip message -->
+                    <div class="text-center pt-4 border-t border-slate-100">
+                        <p class="text-[10px] text-slate-400 font-semibold italic">"ขอบคุณทุกความไว้วางใจที่ให้ เกิบ ดูแลรองเท้าของคุณ"</p>
+                        <p class="text-[9px] text-slate-300 mt-1">Power of POS - Geeb Sneaker</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Modal Footer -->
+            <div class="bg-slate-50 p-4 border-t flex gap-3">
+                <button onclick="shareDigitalReceipt()" class="flex-1 bg-teal-600 hover:bg-teal-700 text-white font-bold py-2.5 rounded-xl text-xs transition-all flex items-center justify-center gap-2">
+                    <i class="fas fa-share-alt"></i> คัดลอกข้อความแชร์สลิป
+                </button>
+                <button onclick="printReceipt()" class="bg-slate-800 hover:bg-slate-700 text-white font-semibold py-2.5 px-4 rounded-xl text-xs transition-all flex items-center justify-center gap-2">
+                    <i class="fas fa-print"></i> พิมพ์
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- CUSTOM CONFIRMATION DIALOG MODAL -->
+    <div id="confirm-modal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-sm w-full overflow-hidden border border-slate-100">
+            <div class="p-6 text-center space-y-4">
+                <div class="w-16 h-16 bg-red-100 text-red-600 rounded-full flex items-center justify-center mx-auto text-2xl">
+                    <i class="fas fa-exclamation-triangle"></i>
+                </div>
+                <div class="space-y-1">
+                    <h3 id="confirm-title" class="font-bold text-lg text-slate-800">ยืนยันการทำรายการ</h3>
+                    <p id="confirm-desc" class="text-sm text-slate-500">คุณแน่ใจหรือไม่ที่จะดำเนินรายการนี้? ข้อมูลอาจสูญหายและไม่สามารถกู้คืนได้</p>
+                </div>
+            </div>
+            <div class="bg-slate-50 p-4 flex gap-3 border-t">
+                <button onclick="closeConfirmModal(false)" class="flex-1 bg-slate-200 hover:bg-slate-300 text-slate-700 font-semibold py-2.5 rounded-xl text-xs transition-all">
+                    ยกเลิก
+                </button>
+                <button id="confirm-yes-btn" onclick="closeConfirmModal(true)" class="flex-1 bg-red-600 hover:bg-red-700 text-white font-bold py-2.5 rounded-xl text-xs transition-all shadow">
+                    ยืนยันทำรายการ
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- SCRIPT LOGIC -->
+    <script>
+        // --- Core Application State ---
+        let services = [];
+        let orders = [];
+        let sheetSettings = { url: "" };
+        let activeTab = 'pos';
+        let confirmPromiseResolver = null;
+        
+        // Default Core Services if empty
+        const defaultServices = [
+            { id: 'srv-1', name: 'ซักแห้งพรีเมียมทั่วไป', price: 250 },
+            { id: 'srv-2', name: 'ซักสะอาดลึกพร้อมกำจัดกลิ่นอับ', price: 350 },
+            { id: 'srv-3', name: 'ขัดขจัดคราบเหลืองใต้พื้น (Un-yellowing)', price: 450 },
+            { id: 'srv-4', name: 'สปาดูแลทำความสะอาดส้นและพื้นนอก', price: 200 },
+            { id: 'srv-5', name: 'ทำสีหนังและสปาเต็มระบบ', price: 1200 },
+            { id: 'srv-6', name: 'พ่นน้ำยากันละอองน้ำพรีเมียม Nano', price: 150 }
+        ];
+
+        // --- Init App ---
+        window.onload = function() {
+            // Load LocalStorage
+            loadLocalStorageData();
+
+            // Setup Datetime Defaults
+            const today = new Date();
+            document.getElementById('order-date').value = today.toISOString().split('T')[0];
+            document.getElementById('history-date-filter').value = today.toISOString().split('T')[0];
+            
+            const hours = String(today.getHours()).padStart(2, '0');
+            const minutes = String(today.getMinutes()).padStart(2, '0');
+            document.getElementById('order-time').value = `${hours}:${minutes}`;
+
+            // Initialize Lists & Tables
+            renderQuickServicesGrid();
+            renderServicesSettingsTable();
+            loadOrdersHistory();
+            updateDailyStats();
+            updateNextOrderIdLabel();
+            updateGoogleSheetConnectionLabel();
+
+            // Run system clock update
+            setInterval(updateSystemTime, 1000);
+            updateSystemTime();
+
+            // Double check alerts
+            checkClosingAlertTime();
+            setInterval(checkClosingAlertTime, 60000); // Check every minute
+        }
+
+        // --- System Clock / Date utils ---
+        function updateSystemTime() {
+            const now = new Date();
+            const hours = String(now.getHours()).padStart(2, '0');
+            const minutes = String(now.getMinutes()).padStart(2, '0');
+            const seconds = String(now.getSeconds()).padStart(2, '0');
+            const dateStr = now.toLocaleDateString('th-TH', { year: 'numeric', month: 'short', day: 'numeric' });
+            
+            const timeDisplay = document.getElementById('current-time-display');
+            if (timeDisplay) {
+                timeDisplay.textContent = `${dateStr} ${hours}:${minutes}:${seconds}`;
+            }
+        }
+
+        // 4 PM / 10 PM logic check
+        function checkClosingAlertTime() {
+            const now = new Date();
+            const currentHour = now.getHours();
+            const closingBanner = document.getElementById('closing-alert');
+            
+            // Show alert if hour is between 16:00-17:00 or >= 22:00
+            if (currentHour === 16 || currentHour >= 22) {
+                closingBanner.classList.remove('hidden');
+            } else {
+                closingBanner.classList.add('hidden');
+            }
+        }
+
+        // --- Local Storage Management ---
+        function loadLocalStorageData() {
+            // Services
+            const localSrv = localStorage.getItem('keb_services');
+            if (localSrv) {
+                services = JSON.parse(localSrv);
+            } else {
+                services = [...defaultServices];
+                localStorage.setItem('keb_services', JSON.stringify(services));
+            }
+
+            // Orders
+            const localOrd = localStorage.getItem('keb_orders');
+            if (localOrd) {
+                orders = JSON.parse(localOrd);
+            } else {
+                orders = [];
+            }
+
+            // Webhook Settings
+            const localWebhook = localStorage.getItem('keb_webhook');
+            if (localWebhook) {
+                sheetSettings = JSON.parse(localWebhook);
+            }
+        }
+
+        function saveServicesToStorage() {
+            localStorage.setItem('keb_services', JSON.stringify(services));
+        }
+
+        function saveOrdersToStorage() {
+            localStorage.setItem('keb_orders', JSON.stringify(orders));
+        }
+
+        // --- Routing / Tabs Switcher ---
+        function switchTab(tabId) {
+            activeTab = tabId;
+            
+            // Toggle Content divs
+            document.getElementById('tab-content-pos').classList.add('hidden');
+            document.getElementById('tab-content-history').classList.add('hidden');
+            document.getElementById('tab-content-settings').classList.add('hidden');
+            document.getElementById(`tab-content-${tabId}`).classList.remove('hidden');
+
+            // Reset Tab Button styles
+            const tabs = ['pos', 'history', 'settings'];
+            tabs.forEach(t => {
+                const btn = document.getElementById(`tab-btn-${t}`);
+                if (t === tabId) {
+                    btn.className = "bg-white text-teal-700 px-4 py-2 rounded-lg font-medium shadow text-sm transition-all flex items-center gap-2";
+                } else {
+                    btn.className = "bg-teal-700 hover:bg-teal-800 text-white px-4 py-2 rounded-lg font-medium text-sm transition-all flex items-center gap-2" + (t === 'settings' ? ' justify-center' : '');
+                }
+            });
+
+            // Reload relevant views
+            if (tabId === 'history') {
+                loadOrdersHistory();
+            } else if (tabId === 'pos') {
+                updateNextOrderIdLabel();
+            }
+        }
+
+        // --- POS / Quick actions ---
+        function renderQuickServicesGrid() {
+            const grid = document.getElementById('quick-services-grid');
+            grid.innerHTML = '';
+
+            services.forEach(srv => {
+                const btn = document.createElement('button');
+                btn.type = "button";
+                btn.onclick = () => selectQuickService(srv.name, srv.price);
+                btn.className = "p-3 bg-slate-50 hover:bg-teal-50 border border-slate-200 hover:border-teal-300 rounded-xl text-left transition-all hover:scale-[1.01]";
+                btn.innerHTML = `
+                    <p class="font-semibold text-xs text-slate-700 truncate">${srv.name}</p>
+                    <p class="text-teal-600 font-bold text-sm mt-1">฿${srv.price.toLocaleString()}</p>
+                `;
+                grid.appendChild(btn);
+            });
+        }
+
+        function selectQuickService(name, price) {
+            const detailsArea = document.getElementById('service-details');
+            const priceInput = document.getElementById('service-price');
+            
+            // Set values
+            if (detailsArea.value.trim() === "") {
+                detailsArea.value = name;
+            } else {
+                detailsArea.value += `\n+ ${name}`;
+            }
+            
+            // Update sum of price
+            const currentPrice = parseFloat(priceInput.value) || 0;
+            priceInput.value = currentPrice + price;
+
+            showToast(`เลือกบริการ: ${name} (+฿${price})`);
+        }
+
+        function quickAction(customName, price) {
+            const detailsArea = document.getElementById('service-details');
+            const priceInput = document.getElementById('service-price');
+
+            detailsArea.value = customName;
+            priceInput.value = price;
+            
+            showToast(`ทางลัดด่วน: ${customName}`);
+        }
+
+        function resetOrderForm() {
+            document.getElementById('customer-name').value = '';
+            document.getElementById('service-details').value = '';
+            document.getElementById('service-price').value = '';
+            
+            // Re-setup date and time
+            const now = new Date();
+            document.getElementById('order-date').value = now.toISOString().split('T')[0];
+            const hours = String(now.getHours()).padStart(2, '0');
+            const minutes = String(now.getMinutes()).padStart(2, '0');
+            document.getElementById('order-time').value = `${hours}:${minutes}`;
+
+            showToast("ล้างฟอร์มเรียบร้อย");
+        }
+
+        function getNextOrderId() {
+            const todayStr = new Date().toISOString().split('T')[0].replace(/-/g, '');
+            const todayOrders = orders.filter(o => o.id.includes(todayStr));
+            const nextNum = String(todayOrders.length + 1).padStart(3, '0');
+            return `KEB-${todayStr}-${nextNum}`;
+        }
+
+        function updateNextOrderIdLabel() {
+            document.getElementById('next-order-id-label').textContent = `ออเดอร์ถัดไป: ${getNextOrderId()}`;
+        }
+
+        // --- Save Order Logic ---
+        function handleSaveOrder(shouldShowReceipt) {
+            const date = document.getElementById('order-date').value;
+            const time = document.getElementById('order-time').value;
+            const customer = document.getElementById('customer-name').value.trim();
+            const details = document.getElementById('service-details').value.trim();
+            const priceVal = document.getElementById('service-price').value;
+
+            // Form validation
+            if (!date || !time || !customer || !details || !priceVal) {
+                showToast("⚠️ กรุณากรอกข้อมูลให้ครบถ้วนทุกช่อง", "error");
+                return;
+            }
+
+            const price = parseFloat(priceVal);
+            if (price < 0 || isNaN(price)) {
+                showToast("⚠️ ราคาค่าบริการไม่ถูกต้อง", "error");
+                return;
+            }
+
+            const newOrder = {
+                id: getNextOrderId(),
+                date: date,
+                time: time,
+                customer: customer,
+                details: details,
+                price: price,
+                service: details.split('\n')[0] // Principal service is first line
+            };
+
+            // Save to State
+            orders.unshift(newOrder); // Add to beginning of array
+            saveOrdersToStorage();
+
+            // Feedback
+            showToast(`🎉 บันทึกคำสั่งซื้อ ${newOrder.id} สำเร็จ!`);
+            
+            // Show digital receipt if requested
+            if (shouldShowReceipt) {
+                openReceiptModal(newOrder);
+            }
+
+            // Cleanup & Stats Update
+            resetOrderForm();
+            updateNextOrderIdLabel();
+            updateDailyStats();
+        }
+
+        // --- Daily Analytics & Stats ---
+        function updateDailyStats() {
+            const todayStr = new Date().toISOString().split('T')[0];
+            const todayOrders = orders.filter(o => o.date === todayStr);
+
+            const totalRev = todayOrders.reduce((sum, o) => sum + o.price, 0);
+            const count = todayOrders.length;
+            const avg = count > 0 ? (totalRev / count) : 0;
+
+            document.getElementById('stat-total-revenue').textContent = totalRev.toLocaleString('th-TH', { minimumFractionDigits: 2 });
+            document.getElementById('stat-order-count').textContent = `${count} รายการ`;
+            document.getElementById('stat-avg-price').textContent = `${Math.round(avg).toLocaleString()} บาท`;
+        }
+
+        // --- History Tab Logic ---
+        function loadOrdersHistory() {
+            const filterDate = document.getElementById('history-date-filter').value;
+            const tableBody = document.getElementById('orders-table-body');
+            const mobileList = document.getElementById('orders-mobile-list');
+            const emptyState = document.getElementById('orders-empty-state');
+
+            // Filter
+            const filtered = orders.filter(o => o.date === filterDate);
+
+            // Clean
+            tableBody.innerHTML = '';
+            mobileList.innerHTML = '';
+
+            // Update stats panel
+            const dailyTotal = filtered.reduce((sum, o) => sum + o.price, 0);
+            document.getElementById('history-order-count').textContent = `${filtered.length} ออเดอร์`;
+            document.getElementById('history-total-revenue').textContent = `฿${dailyTotal.toLocaleString('th-TH', { minimumFractionDigits: 2 })}`;
+
+            // Render Breakdowns
+            renderServiceBreakdown(filtered);
+
+            if (filtered.length === 0) {
+                emptyState.classList.remove('hidden');
+                return;
+            } else {
+                emptyState.classList.add('hidden');
+            }
+
+            // Render Table (Desktop) & Cards (Mobile)
+            filtered.forEach(o => {
+                // Table Row
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-slate-50 transition-colors";
+                tr.innerHTML = `
+                    <td class="py-3.5 pl-2 font-mono font-bold text-xs text-slate-900">${o.id}</td>
+                    <td class="py-3.5 text-xs text-slate-500">${o.time} น.</td>
+                    <td class="py-3.5 text-xs font-semibold text-slate-800">${o.customer}</td>
+                    <td class="py-3.5 text-xs text-slate-600 truncate max-w-xs">${o.service}</td>
+                    <td class="py-3.5 text-xs text-slate-400 italic truncate max-w-xs">${o.details.replace(/\n/g, ', ')}</td>
+                    <td class="py-3.5 text-xs text-right pr-2 font-bold text-emerald-600">฿${o.price.toLocaleString()}</td>
+                    <td class="py-3.5 text-center">
+                        <div class="flex justify-center gap-1.5">
+                            <button onclick='viewReceiptById("${o.id}")' class="p-1.5 bg-teal-50 hover:bg-teal-100 text-teal-600 rounded-lg text-xs transition-all" title="ใบเสร็จ">
+                                <i class="fas fa-file-invoice-dollar"></i>
+                            </button>
+                            <button onclick='askDeleteOrder("${o.id}")' class="p-1.5 bg-red-50 hover:bg-red-100 text-red-500 rounded-lg text-xs transition-all" title="ลบออเดอร์">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </td>
+                `;
+                tableBody.appendChild(tr);
+
+                // Mobile Card
+                const card = document.createElement('div');
+                card.className = "bg-slate-50 p-4 rounded-xl border border-slate-100 space-y-2 relative";
+                card.innerHTML = `
+                    <div class="flex justify-between items-center">
+                        <span class="font-mono font-bold text-xs text-slate-900">${o.id}</span>
+                        <span class="text-[10px] text-slate-400">${o.time} น.</span>
+                    </div>
+                    <div class="space-y-1">
+                        <p class="text-xs font-bold text-slate-800">ลูกค้า: ${o.customer}</p>
+                        <p class="text-xs text-slate-600">บริการ: ${o.service}</p>
+                        <p class="text-[11px] text-slate-400 italic">${o.details.replace(/\n/g, ', ')}</p>
+                    </div>
+                    <div class="flex justify-between items-center pt-2 border-t border-slate-200/60">
+                        <span class="text-sm font-extrabold text-emerald-600">฿${o.price.toLocaleString()}</span>
+                        <div class="flex gap-2">
+                            <button onclick='viewReceiptById("${o.id}")' class="px-3 py-1 bg-teal-100 hover:bg-teal-200 text-teal-700 text-xs font-semibold rounded-lg transition-all">
+                                <i class="fas fa-receipt mr-1"></i> สลิป
+                            </button>
+                            <button onclick='askDeleteOrder("${o.id}")' class="p-1 text-red-500 hover:text-red-700 transition-all">
+                                <i class="fas fa-trash-alt"></i>
+                            </button>
+                        </div>
+                    </div>
+                `;
+                mobileList.appendChild(card);
+            });
+        }
+
+        // --- Service Breakdown Graph Logic ---
+        function renderServiceBreakdown(filteredOrders) {
+            const container = document.getElementById('service-breakdown-container');
+            container.innerHTML = '';
+
+            if (filteredOrders.length === 0) {
+                container.innerHTML = '<p class="text-xs text-slate-400 text-center py-10">ไม่มีรายการจำหน่ายในวันที่เลือก</p>';
+                return;
+            }
+
+            // Map & Count Services
+            const counts = {};
+            let totalQty = 0;
+            
+            filteredOrders.forEach(o => {
+                counts[o.service] = (counts[o.service] || 0) + 1;
+                totalQty++;
+            });
+
+            // Sort counts descending
+            const sorted = Object.entries(counts).sort((a, b) => b[1] - a[1]);
+
+            sorted.forEach(([srvName, qty]) => {
+                const pct = Math.round((qty / totalQty) * 100);
+                const bar = document.createElement('div');
+                bar.className = "space-y-1";
+                bar.innerHTML = `
+                    <div class="flex justify-between items-center text-xs text-slate-700 font-medium">
+                        <span class="truncate max-w-[200px]">${srvName}</span>
+                        <span>${qty} ชิ้น (${pct}%)</span>
+                    </div>
+                    <div class="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
+                        <div class="bg-teal-500 h-full rounded-full" style="width: ${pct}%"></div>
+                    </div>
+                `;
+                container.appendChild(bar);
+            });
+        }
+
+        // --- Settings Tab: Services Settings ---
+        function renderServicesSettingsTable() {
+            const tbody = document.getElementById('services-settings-table');
+            tbody.innerHTML = '';
+
+            services.forEach((srv, index) => {
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-slate-50 transition-colors";
+                tr.innerHTML = `
+                    <td class="py-2.5 pl-2 font-semibold text-slate-400">${index + 1}</td>
+                    <td class="py-2.5 font-medium text-slate-700">${srv.name}</td>
+                    <td class="py-2.5 text-right pr-4 font-bold text-emerald-600">฿${srv.price.toLocaleString()}</td>
+                    <td class="py-2.5 text-center">
+                        <button onclick="deleteService('${srv.id}')" class="text-red-500 hover:text-red-700 transition-all p-1">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function handleAddService(event) {
+            event.preventDefault();
+            const name = document.getElementById('new-service-name').value.trim();
+            const priceVal = document.getElementById('new-service-price').value;
+
+            if (!name || !priceVal) return;
+
+            const price = parseFloat(priceVal);
+            if (price < 0 || isNaN(price)) {
+                showToast("⚠️ ราคาค่าบริการไม่ถูกต้อง", "error");
+                return;
+            }
+
+            const newSrv = {
+                id: `srv-${Date.now()}`,
+                name: name,
+                price: price
+            };
+
+            services.push(newSrv);
+            saveServicesToStorage();
+            
+            // Reload components
+            renderQuickServicesGrid();
+            renderServicesSettingsTable();
+
+            // Clear Fields
+            document.getElementById('new-service-name').value = '';
+            document.getElementById('new-service-price').value = '';
+
+            showToast(`เพิ่มบริการ "${name}" สำเร็จ!`);
+        }
+
+        function deleteService(srvId) {
+            // Safe removal of service setting
+            services = services.filter(s => s.id !== srvId);
+            saveServicesToStorage();
+            
+            renderQuickServicesGrid();
+            renderServicesSettingsTable();
+            showToast("ลบตัวเลือกบริการเรียบร้อย");
+        }
+
+        // --- Custom Confirmation Dialog UI ---
+        function showConfirmDialog(title, message) {
+            document.getElementById('confirm-title').textContent = title;
+            document.getElementById('confirm-desc').textContent = message;
+            document.getElementById('confirm-modal').classList.remove('hidden');
+            
+            return new Promise((resolve) => {
+                confirmPromiseResolver = resolve;
+            });
+        }
+
+        function closeConfirmModal(result) {
+            document.getElementById('confirm-modal').classList.add('hidden');
+            if (confirmPromiseResolver) {
+                confirmPromiseResolver(result);
+                confirmPromiseResolver = null;
+            }
+        }
+
+        // --- Custom modal actions helper ---
+        async function askDeleteOrder(orderId) {
+            const confirmed = await showConfirmDialog(
+                "ลบรายการออเดอร์?", 
+                `คุณแน่ใจว่าต้องการลบออเดอร์หมายเลข ${orderId} หรือไม่? รายการนี้จะถูกลบออกจากสถิติในเครื่องทันที`
+            );
+            
+            if (confirmed) {
+                orders = orders.filter(o => o.id !== orderId);
+                saveOrdersToStorage();
+                loadOrdersHistory();
+                updateDailyStats();
+                updateNextOrderIdLabel();
+                showToast("ลบออเดอร์สำเร็จ");
+            }
+        }
+
+        async function askClearAllOrders() {
+            const confirmed = await showConfirmDialog(
+                "ล้างข้อมูลออเดอร์ทั้งหมด?", 
+                "คำเตือน! ข้อมูลออเดอร์ที่ถูกบันทึกทั้งหมดในเครื่องจะถูกลบ และสถิติทุกอย่างจะถูกรีเซ็ตกลับเป็นศูนย์"
+            );
+            
+            if (confirmed) {
+                orders = [];
+                saveOrdersToStorage();
+                loadOrdersHistory();
+                updateDailyStats();
+                updateNextOrderIdLabel();
+                showToast("ล้างข้อมูลออเดอร์ทั้งหมดเรียบร้อย");
+            }
+        }
+
+        async function triggerManualDayClose() {
+            const todayStr = new Date().toISOString().split('T')[0];
+            const filteredToday = orders.filter(o => o.date === todayStr);
+
+            if (filteredToday.length === 0) {
+                showToast("ไม่มีออเดอร์ของวันนี้ที่ต้องสรุปยอด", "error");
+                return;
+            }
+
+            const confirmed = await showConfirmDialog(
+                "ยืนยันบังคับปิดยอดรอบวัน?", 
+                "การกดบังคับปิดยอด จะถือว่าต้องการจบประมวลผลของวันปัจจุบันทันที กรุณาตรวจสอบข้อมูลและส่ง Google Sheet ก่อนทำรายการนี้"
+            );
+
+            if (confirmed) {
+                showToast("บังคับปิดยอดและสถิติรอบวันสำเร็จ!");
+                // Here we keep historical data inside localStorage but user can proceed to next days or reset.
+                switchTab('pos');
+            }
+        }
+
+        // --- DIGITAL RECEIPT (MODAL) ---
+        let currentViewingOrder = null;
+
+        function viewReceiptById(orderId) {
+            const o = orders.find(ord => ord.id === orderId);
+            if (o) {
+                openReceiptModal(o);
+            } else {
+                showToast("ไม่พบข้อมูลสลิปที่เลือก", "error");
+            }
+        }
+
+        function openReceiptModal(order) {
+            currentViewingOrder = order;
+
+            // Date formats
+            const rawDate = new Date(order.date);
+            const formattedDate = rawDate.toLocaleDateString('th-TH', { year: 'numeric', month: 'short', day: 'numeric' });
+
+            // Populate Elements
+            document.getElementById('slip-order-id').textContent = order.id;
+            document.getElementById('slip-date').textContent = formattedDate;
+            document.getElementById('slip-time').textContent = `${order.time} น.`;
+            document.getElementById('slip-customer').textContent = order.customer;
+            document.getElementById('slip-details').textContent = order.details;
+            document.getElementById('slip-total-price').textContent = order.price.toLocaleString();
+
+            // Reveal
+            document.getElementById('receipt-modal').classList.remove('hidden');
+        }
+
+        function closeReceiptModal() {
+            document.getElementById('receipt-modal').classList.add('hidden');
+            currentViewingOrder = null;
+        }
+
+        function shareDigitalReceipt() {
+            if (!currentViewingOrder) return;
+            
+            const rawDate = new Date(currentViewingOrder.date);
+            const formattedDate = rawDate.toLocaleDateString('th-TH', { year: 'numeric', month: 'short', day: 'numeric' });
+
+            const textToShare = 
+`🧾 ใบเสร็จรับเงินดิจิทัล - เกิบ Sneaker & Cleaning
+--------------------------------------
+เลขที่ออเดอร์: ${currentViewingOrder.id}
+วันที่: ${formattedDate}
+เวลา: ${currentViewingOrder.time} น.
+ลูกค้า: ${currentViewingOrder.customer}
+บริการ: 
+${currentViewingOrder.details}
+--------------------------------------
+ยอดรวมสุทธิ: ${currentViewingOrder.price.toLocaleString()} บาท (ชำระเงินแล้ว)
+
+"ขอบคุณที่ไว้วางใจให้ เกิบ ดูแลรองเท้าของคุณ"`;
+
+            // Copy utilizing fallback execution to support safe Canvas iFrame interaction
+            const tempTextArea = document.createElement("textarea");
+            tempTextArea.value = textToShare;
+            document.body.appendChild(tempTextArea);
+            tempTextArea.select();
+            
+            try {
+                const successful = document.execCommand('copy');
+                if (successful) {
+                    showToast("📋 คัดลอกรายละเอียดสลิปเพื่อส่งต่อแล้ว!");
+                } else {
+                    showToast("ไม่สามารถคัดลอกได้อัตโนมัติ", "error");
+                }
+            } catch (err) {
+                showToast("ไม่สามารถคัดลอกได้อัตโนมัติ", "error");
+            }
+            
+            document.body.removeChild(tempTextArea);
+        }
+
+        function printReceipt() {
+            // Open minimalist print mode representing thermal design
+            window.print();
+        }
+
+        // --- GOOGLE SHEETS CONNECTIONS ---
+        function saveSheetSettings() {
+            const urlInput = document.getElementById('sheet-webhook-url').value.trim();
+            
+            if (urlInput && !urlInput.startsWith('https://script.google.com/')) {
+                showToast("⚠️ รูปแบบ URL Web App ไม่ถูกต้อง", "error");
+                return;
+            }
+
+            sheetSettings.url = urlInput;
+            localStorage.setItem('keb_webhook', JSON.stringify(sheetSettings));
+            
+            updateGoogleSheetConnectionLabel();
+            showToast("💾 บันทึกที่อยู่เชื่อมต่อ Google Sheets สำเร็จ!");
+        }
+
+        function updateGoogleSheetConnectionLabel() {
+            const statusLabel = document.getElementById('sheet-api-status');
+            const targetInput = document.getElementById('sheet-webhook-url');
+            
+            if (sheetSettings.url) {
+                statusLabel.textContent = "เชื่อมต่อแล้ว";
+                statusLabel.className = "px-2.5 py-1 rounded-full font-bold bg-emerald-100 text-emerald-700";
+                targetInput.value = sheetSettings.url;
+            } else {
+                statusLabel.textContent = "ไม่ได้ตั้งค่า URL";
+                statusLabel.className = "px-2.5 py-1 rounded-full font-bold bg-amber-100 text-amber-700";
+            }
+        }
+
+        function exportToGoogleSheet() {
+            if (!sheetSettings.url) {
+                showToast("⚠️ ไม่สามารถบันทึกได้! กรุณาตั้งค่า Google Sheets API URL ในหน้าการตั้งค่าก่อน", "error");
+                switchTab('settings');
+                return;
+            }
+
+            const filterDate = document.getElementById('history-date-filter').value;
+            const filteredOrders = orders.filter(o => o.date === filterDate);
+
+            if (filteredOrders.length === 0) {
+                showToast("⚠️ ไม่มีข้อมูลรายการออเดอร์ที่จะส่งออกสำหรับวันนี้", "error");
+                return;
+            }
+
+            showToast("⏳ กำลังเริ่มส่งข้อมูลไปยัง Google Sheets...");
+
+            // Make POST Webhook request with exponential backoff capability built-in
+            sendWebhookWithRetry(sheetSettings.url, filteredOrders)
+                .then(res => {
+                    if (res && res.status === 'success') {
+                        showToast(`🚀 อัปโหลด ${filteredOrders.length} ออเดอร์ ไปยัง Google Sheet สำเร็จ!`);
+                    } else {
+                        // For no-cors requests we often get success but cannot parse. We assume success if fetch finishes without error.
+                        showToast(`🚀 ส่งข้อมูลเรียบร้อยแล้ว! กรุณาตรวจสอบบน Google Sheet ของคุณ`);
+                    }
+                })
+                .catch(err => {
+                    showToast("❌ ล้มเหลว: ไม่สามารถติดต่อ Google Web App ได้ " + err.message, "error");
+                });
+        }
+
+        // Exponential backoff network fetch helper
+        async function sendWebhookWithRetry(url, data, retries = 5, delay = 1000) {
+            for (let i = 0; i < retries; i++) {
+                try {
+                    // ปรับโครงสร้าง parameter เพื่อส่งผ่าน Google Web App ให้เข้ากันได้ดีที่สุด
+                    const response = await fetch(url, {
+                        method: 'POST',
+                        mode: 'no-cors', // มีความจำเป็นสำหรับ Google Apps Script เพื่อหลีกเลี่ยง CORS block บนเบราว์เซอร์หลัก
+                        cache: 'no-cache',
+                        headers: {
+                            'Content-Type': 'text/plain;charset=utf-8' // ตั้งค่าตัวนี้เพื่อให้ Apps Script รับ body เป็น text ไปแกะต่อได้ง่ายสุด
+                        },
+                        body: JSON.stringify(data)
+                    });
+                    
+                    // เมื่อใช้ mode: 'no-cors' จะไม่สามารถอ่าน response body ได้ (opaque response)
+                    // จึงให้ส่งกลับเป็นสถานะสำเร็จทันทีหลังจากส่งค่าไปแล้วโดยไม่ติด error
+                    return { status: 'success', message: 'Data sent successfully' };
+                } catch (error) {
+                    if (i === retries - 1) throw error;
+                    await new Promise(r => setTimeout(r, delay));
+                    delay *= 2; // เพิ่มเวลาดีเลย์แบบ exponential
+                }
+            }
+        }
+
+        function copyAppsScriptCode() {
+            const scriptCode = 
+`function doPost(e) {
+  try {
+    var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
+    var contents = e.postData.contents;
+    var payload = JSON.parse(contents);
+    
+    // สร้างหัวตารางให้อัตโนมัติหากเป็นสเปรดชีตเปล่า
+    if (sheet.getLastRow() === 0) {
+      sheet.appendRow(["วันที่บันทึก", "เลขที่ออเดอร์", "เวลาบริการ", "ชื่อลูกค้า", "ประเภทบริการหลัก", "รายละเอียดทั้งหมด", "ราคาค่าบริการ (บาท)"]);
+    }
+    
+    if (Array.isArray(payload)) {
+      payload.forEach(function(row) {
+        sheet.appendRow([row.date, row.id, row.time, row.customer, row.service, row.details, row.price]);
+      });
+    } else {
+      sheet.appendRow([payload.date, payload.id, payload.time, payload.customer, payload.service, payload.details, payload.price]);
+    }
+    
+    // ตอบกลับเพื่อยืนยันสถานะการทำงานสำเร็จ
+    return ContentService.createTextOutput(JSON.stringify({ status: "success", message: "บันทึกเรียบร้อย" }))
+      .setMimeType(ContentService.MimeType.JSON);
+      
+  } catch (err) {
+    return ContentService.createTextOutput(JSON.stringify({ status: "error", message: err.toString() }))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+}`;
+
+            const temp = document.createElement("textarea");
+            temp.value = scriptCode;
+            document.body.appendChild(temp);
+            temp.select();
+            
+            try {
+                const successful = document.execCommand('copy');
+                if (successful) {
+                    showToast("📋 คัดลอกโค้ดสคริปต์ไปลงคลิปบอร์ดแล้ว!");
+                } else {
+                    showToast("ไม่สามารถคัดลอกได้อัตโนมัติ", "error");
+                }
+            } catch (err) {
+                showToast("ไม่สามารถคัดลอกได้อัตโนมัติ", "error");
+            }
+            
+            document.body.removeChild(temp);
+        }
+
+        // --- Custom Toast Notifications system ---
+        function showToast(message, type = "success") {
+            const toast = document.getElementById('toast-notification');
+            const icon = document.getElementById('toast-icon');
+            const text = document.getElementById('toast-message');
+
+            // Setup Icon & Colors
+            if (type === "success") {
+                icon.innerHTML = '<i class="fas fa-check-circle"></i>';
+                icon.className = "text-emerald-400 text-xl";
+            } else {
+                icon.innerHTML = '<i class="fas fa-exclamation-circle"></i>';
+                icon.className = "text-amber-400 text-xl";
+            }
+
+            text.textContent = message;
+
+            // Animation display trigger
+            toast.classList.remove('hidden');
+            setTimeout(() => {
+                toast.classList.remove('translate-y-10', 'opacity-0');
+            }, 10);
+
+            // Close after 4 seconds
+            setTimeout(() => {
+                toast.classList.add('translate-y-10', 'opacity-0');
+                setTimeout(() => {
+                    toast.classList.add('hidden');
+                }, 300);
+            }, 4000);
+        }
+    </script>
+</body>
+</html>
