@@ -12,6 +12,8 @@
     <link href="https://fonts.googleapis.com/css2?family=Mitr:wght@300;400;500;600&family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <!-- Font Awesome Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- html2canvas สำหรับแปลง HTML เป็นรูปภาพ -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     
     <style>
         body {
@@ -60,7 +62,6 @@
 
     <!-- Main Content Area -->
     <main class="flex-grow max-w-7xl w-full mx-auto p-4 sm:p-6">
-        
         <!-- TOAST NOTIFICATION -->
         <div id="toast-notification" class="hidden fixed bottom-5 right-5 z-50 bg-slate-900 text-white px-6 py-4 rounded-xl shadow-2xl flex items-center gap-3 transition-all transform translate-y-10 opacity-0">
             <span id="toast-icon" class="text-emerald-400 text-xl"><i class="fas fa-check-circle"></i></span>
@@ -136,7 +137,7 @@
 
                         <!-- Manual/Additional Service Note -->
                         <label class="block text-xs font-semibold text-slate-500 mb-1.5">รายละเอียดบริการเพิ่มเติม / แบรนด์รองเท้า</label>
-                        <textarea id="service-details" rows="3" placeholder="ระบุแบรนด์ สี หรือจุดชำรุดเป็นพิเศษ เช่น Adidas Ultraboost สีขาว ซักคราบเหลืองใต้พื้น" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"></textarea>
+                        <textarea id="service-details" rows="3" placeholder="ระบุแบรนด์ สี หรือจุดชำรุดเป็นพิเศษ เช่น Adidas Ultraboost สีขาว (฿250)" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"></textarea>
                     </div>
 
                     <!-- Price Input -->
@@ -148,14 +149,14 @@
                         </div>
                     </div>
 
-                    <!-- Save Buttons with separation logic -->
+                    <!-- Save Buttons -->
                     <div class="pt-4 border-t flex flex-col sm:flex-row gap-3">
                         <button type="button" onclick="resetOrderForm()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 py-3 px-4 rounded-xl text-sm font-semibold transition-all">
                             <i class="fas fa-eraser"></i> ล้างฟอร์ม
                         </button>
                         
                         <button type="button" onclick="handleSaveOrder(false)" class="flex-1 bg-slate-800 hover:bg-slate-700 text-white py-3 px-4 rounded-xl text-sm font-semibold transition-all flex items-center justify-center gap-2 shadow">
-                            <i class="fas fa-hdd"></i> บันทึกเข้าระบบอย่างเดียว
+                            <i class="fas fa-hdd"></i> บันทึกเข้าระบบ
                         </button>
                         
                         <button type="button" onclick="handleSaveOrder(true)" class="flex-1 bg-gradient-to-r from-teal-600 to-emerald-600 hover:from-teal-700 hover:to-emerald-700 text-white py-3 px-6 rounded-xl text-sm font-bold shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2">
@@ -207,7 +208,7 @@
                 <!-- Google Sheet Integration Status -->
                 <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-5">
                     <h3 class="text-sm font-bold text-slate-800 mb-2 flex items-center gap-2">
-                        <i class="fab fa-google-drive text-emerald-600"></i> สเตตัสการเชื่อมต่อ Google Sheet
+                        <i class="fab fa-google-drive text-emerald-600"></i> สเตตัสเชื่อมต่อ Google Sheet
                     </h3>
                     <div class="space-y-3 mt-3">
                         <div class="flex items-center justify-between text-xs">
@@ -215,7 +216,7 @@
                             <span id="sheet-api-status" class="px-2.5 py-1 rounded-full font-bold bg-amber-100 text-amber-700">ไม่ได้ตั้งค่า URL</span>
                         </div>
                         <p class="text-[11px] text-slate-400 leading-relaxed">
-                            ตั้งค่า URL ของกูเกิลชีตได้ที่ปุ่มฟันเฟือง <i class="fas fa-cog"></i> มุมขวาบน เพื่อส่งข้อมูลอัปเดตอัตโนมัติเมื่อกดสรุปยอดรายวัน
+                            ตั้งค่า URL ของกูเกิลชีตได้ที่ปุ่มฟันเฟือง <i class="fas fa-cog"></i> มุมขวาบน เพื่อส่งข้อมูลอัตโนมัติเมื่อปิดยอด
                         </p>
                     </div>
                 </div>
@@ -224,7 +225,6 @@
 
         <!-- TAB 2: HISTORY & CLOSE DAY -->
         <section id="tab-content-history" class="hidden space-y-6">
-            
             <!-- Close Day Actions & Summary -->
             <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <!-- Daily closing controls -->
@@ -328,7 +328,6 @@
 
         <!-- TAB 3: SETTINGS -->
         <section id="tab-content-settings" class="hidden grid grid-cols-1 lg:grid-cols-3 gap-6">
-            
             <!-- Service Options Settings -->
             <div class="lg:col-span-2 bg-white rounded-2xl shadow-sm border border-slate-100 p-6">
                 <h2 class="text-lg font-bold text-slate-800 border-b pb-4 mb-6 flex items-center gap-2">
@@ -393,19 +392,19 @@
                 <!-- Mini Setup Guide -->
                 <div class="bg-slate-50 p-4 rounded-xl border border-slate-200">
                     <h3 class="text-xs font-bold text-slate-700 mb-2 flex items-center gap-1.5">
-                        <i class="fas fa-question-circle text-teal-600"></i> วิธีการติดตั้งใช้งาน Google Sheet
+                        <i class="fas fa-question-circle text-teal-600"></i> วิธีการติดตั้ง
                     </h3>
                     <ol class="text-[11px] text-slate-600 space-y-2 list-decimal pl-4 leading-relaxed font-sans">
-                        <li>เปิด Google Sheet ใหม่ขึ้นมา</li>
-                        <li>ไปที่ <strong>ส่วนขยาย (Extensions)</strong> &gt; <strong>Apps Script</strong></li>
-                        <li>คัดลอกโค้ดสคริปต์ด้านล่างนี้ไปแทนที่โค้ดเดิมทั้งหมด</li>
-                        <li>กด <strong>การทำให้ใช้งานได้ (Deploy)</strong> &gt; <strong>การทำให้ใช้งานได้ใหม่ (New deployment)</strong></li>
-                        <li>เลือกประเภทเป็น <strong>เว็บแอป (Web app)</strong>, ตั้งค่าสิทธิ์ให้ "ทุกคน" เข้าถึงได้ (Anyone) จากนั้นทำการยืนยันสิทธิ์</li>
-                        <li>ก๊อบปี้เว็บแอป URL นำมาใส่ช่องด้านบนแล้วกดบันทึก</li>
+                        <li>เปิดสเปรดชีตเปล่าใหม่ใน Google Sheets</li>
+                        <li>ไปที่ <strong>ส่วนขยาย</strong> &gt; <strong>Apps Script</strong></li>
+                        <li>วางโค้ดสคริปต์แทนที่โค้ดเดิม (กดปุ่มด้านล่างเพื่อคัดลอกโค้ด)</li>
+                        <li>กด <strong>การทำให้ใช้งานได้ (Deploy)</strong> &gt; <strong>การทำให้ใช้งานได้ใหม่</strong></li>
+                        <li>เลือก <strong>เว็บแอป (Web app)</strong>, สิทธิ์การเข้าถึงเป็น <strong>"ทุกคน" (Anyone)</strong> และกดยืนยัน</li>
+                        <li>ก๊อบปี้เว็บแอป URL นำมาใส่ช่องด้านบน</li>
                     </ol>
 
                     <button onclick="copyAppsScriptCode()" class="w-full mt-3 bg-white hover:bg-slate-100 text-teal-600 border border-teal-200 text-xs font-bold py-2 rounded-lg transition-all flex items-center justify-center gap-1.5">
-                        <i class="fas fa-copy"></i> คัดลอกโค้ดสคริปต์
+                        <i class="fas fa-copy"></i> คัดลอกโค้ด Apps Script
                     </button>
                 </div>
             </div>
@@ -437,7 +436,7 @@
                     <div class="text-center space-y-1">
                         <h4 class="font-title text-base font-bold text-slate-900">เกิบ Sneaker & Cleaning</h4>
                         <p class="text-[10px] text-slate-400">บริการสปาและทำความสะอาดรองเท้าพรีเมียม</p>
-                        <p class="text-[10px] text-slate-400">โทร. 089-XXX-XXXX | LINE: @geebsneaker</p>
+                        <p class="text-[10px] text-slate-400">โทร. 083-3356892</p>
                     </div>
 
                     <div class="border-b border-dashed my-2"></div>
@@ -495,11 +494,14 @@
             </div>
 
             <!-- Modal Footer -->
-            <div class="bg-slate-50 p-4 border-t flex gap-3">
-                <button onclick="shareDigitalReceipt()" class="flex-1 bg-teal-600 hover:bg-teal-700 text-white font-bold py-2.5 rounded-xl text-xs transition-all flex items-center justify-center gap-2">
-                    <i class="fas fa-share-alt"></i> คัดลอกข้อความแชร์สลิป
+            <div class="bg-slate-50 p-4 border-t grid grid-cols-1 sm:grid-cols-3 gap-2">
+                <button onclick="downloadReceiptImage()" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 px-2 rounded-xl text-xs transition-all flex items-center justify-center gap-1.5 shadow">
+                    <i class="fas fa-image"></i> เซฟรูปลงเครื่อง
                 </button>
-                <button onclick="printReceipt()" class="bg-slate-800 hover:bg-slate-700 text-white font-semibold py-2.5 px-4 rounded-xl text-xs transition-all flex items-center justify-center gap-2">
+                <button onclick="shareDigitalReceipt()" class="bg-teal-600 hover:bg-teal-700 text-white font-bold py-2.5 px-2 rounded-xl text-xs transition-all flex items-center justify-center gap-1.5 shadow">
+                    <i class="fas fa-copy"></i> ก๊อบปี้ข้อความ
+                </button>
+                <button onclick="printReceipt()" class="bg-slate-800 hover:bg-slate-700 text-white font-bold py-2.5 px-2 rounded-xl text-xs transition-all flex items-center justify-center gap-1.5 shadow">
                     <i class="fas fa-print"></i> พิมพ์
                 </button>
             </div>
@@ -692,11 +694,14 @@
             const detailsArea = document.getElementById('service-details');
             const priceInput = document.getElementById('service-price');
             
-            // Set values
+            // สร้างข้อความพร้อมวงเล็บราคา
+            const textToAdd = `${name} (฿${price})`;
+            
+            // นำไปต่อท้ายรายละเอียดเดิม
             if (detailsArea.value.trim() === "") {
-                detailsArea.value = name;
+                detailsArea.value = textToAdd;
             } else {
-                detailsArea.value += `\n+ ${name}`;
+                detailsArea.value += `\n+ ${textToAdd}`;
             }
             
             // Update sum of price
@@ -710,7 +715,8 @@
             const detailsArea = document.getElementById('service-details');
             const priceInput = document.getElementById('service-price');
 
-            detailsArea.value = customName;
+            // สำหรับทางลัด จะใส่ข้อความพร้อมราคาด้วยเช่นกัน
+            detailsArea.value = `${customName} (฿${price})`;
             priceInput.value = price;
             
             showToast(`ทางลัดด่วน: ${customName}`);
@@ -902,7 +908,9 @@
             let totalQty = 0;
             
             filteredOrders.forEach(o => {
-                counts[o.service] = (counts[o.service] || 0) + 1;
+                // Since service name now might contain price (e.g. "Name (฿200)"), strip it for analytics using regex
+                const cleanName = o.service.replace(/\s\(\฿\d+\)/, '');
+                counts[cleanName] = (counts[cleanName] || 0) + 1;
                 totalQty++;
             });
 
@@ -1145,6 +1153,36 @@ ${currentViewingOrder.details}
             window.print();
         }
 
+        function downloadReceiptImage() {
+            if (!currentViewingOrder) return;
+            
+            showToast("⏳ กำลังสร้างไฟล์รูปภาพ...");
+            const slipElement = document.getElementById('thermal-slip');
+            
+            // ใช้ html2canvas แคปเจอร์เฉพาะส่วน div ที่เป็นสลิป
+            html2canvas(slipElement, {
+                scale: 2, // เพิ่มความละเอียดภาพ (เรตินา)
+                backgroundColor: "#ffffff", // พื้นหลังสีขาว
+                useCORS: true
+            }).then(canvas => {
+                // แปลงเป็นภาพ JPEG คุณภาพ 90%
+                const imgData = canvas.toDataURL('image/jpeg', 0.9);
+                
+                // สร้างลิงก์ดาวน์โหลดจำลองแล้วคลิก
+                const link = document.createElement('a');
+                link.download = `Receipt_${currentViewingOrder.id}.jpg`;
+                link.href = imgData;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                
+                showToast("📸 บันทึกสลิปเป็นรูปภาพสำเร็จ!");
+            }).catch(err => {
+                showToast("❌ ไม่สามารถสร้างรูปภาพได้", "error");
+                console.error(err);
+            });
+        }
+
         // --- GOOGLE SHEETS CONNECTIONS ---
         function saveSheetSettings() {
             const urlInput = document.getElementById('sheet-webhook-url').value.trim();
@@ -1198,7 +1236,6 @@ ${currentViewingOrder.details}
                     if (res && res.status === 'success') {
                         showToast(`🚀 อัปโหลด ${filteredOrders.length} ออเดอร์ ไปยัง Google Sheet สำเร็จ!`);
                     } else {
-                        // For no-cors requests we often get success but cannot parse. We assume success if fetch finishes without error.
                         showToast(`🚀 ส่งข้อมูลเรียบร้อยแล้ว! กรุณาตรวจสอบบน Google Sheet ของคุณ`);
                     }
                 })
@@ -1211,24 +1248,21 @@ ${currentViewingOrder.details}
         async function sendWebhookWithRetry(url, data, retries = 5, delay = 1000) {
             for (let i = 0; i < retries; i++) {
                 try {
-                    // ปรับโครงสร้าง parameter เพื่อส่งผ่าน Google Web App ให้เข้ากันได้ดีที่สุด
                     const response = await fetch(url, {
                         method: 'POST',
-                        mode: 'no-cors', // มีความจำเป็นสำหรับ Google Apps Script เพื่อหลีกเลี่ยง CORS block บนเบราว์เซอร์หลัก
+                        mode: 'no-cors', 
                         cache: 'no-cache',
                         headers: {
-                            'Content-Type': 'text/plain;charset=utf-8' // ตั้งค่าตัวนี้เพื่อให้ Apps Script รับ body เป็น text ไปแกะต่อได้ง่ายสุด
+                            'Content-Type': 'text/plain;charset=utf-8' 
                         },
                         body: JSON.stringify(data)
                     });
                     
-                    // เมื่อใช้ mode: 'no-cors' จะไม่สามารถอ่าน response body ได้ (opaque response)
-                    // จึงให้ส่งกลับเป็นสถานะสำเร็จทันทีหลังจากส่งค่าไปแล้วโดยไม่ติด error
                     return { status: 'success', message: 'Data sent successfully' };
                 } catch (error) {
                     if (i === retries - 1) throw error;
                     await new Promise(r => setTimeout(r, delay));
-                    delay *= 2; // เพิ่มเวลาดีเลย์แบบ exponential
+                    delay *= 2; 
                 }
             }
         }
