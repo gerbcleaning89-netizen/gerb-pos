@@ -266,6 +266,10 @@
                         <button onclick="exportToGoogleSheet()" class="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 px-4 rounded-xl text-sm transition-all shadow-md hover:shadow-lg flex items-center justify-center gap-2 min-w-[200px]">
                             <i class="fab fa-google text-sm"></i> ส่งข้อมูลวันนี้ไป Google Sheet
                         </button>
+                        <!-- เพิ่มปุ่มดึงข้อมูล Sync ตรงนี้ -->
+                        <button onclick="importFromGoogleSheet()" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-xl text-sm transition-all shadow-md hover:shadow-lg flex items-center justify-center gap-2 min-w-[200px]">
+                            <i class="fas fa-cloud-download-alt text-sm"></i> ดึงข้อมูลออเดอร์จากระบบ
+                        </button>
                         <button onclick="triggerManualDayClose()" class="bg-slate-900 hover:bg-slate-800 text-white font-semibold py-3 px-5 rounded-xl text-sm transition-all flex items-center justify-center gap-2">
                             <i class="fas fa-power-off text-red-400"></i> บังคับปิดยอดวัน (รีเซ็ตเตรียมเริ่มรอบใหม่)
                         </button>
@@ -589,14 +593,14 @@
             </div>
 
             <!-- Modal Footer -->
-            <div class="bg-slate-50 p-4 border-t grid grid-cols-1 sm:grid-cols-3 gap-2">
-                <button onclick="downloadReceiptImage()" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 px-2 rounded-xl text-xs transition-all flex items-center justify-center gap-1.5 shadow">
-                    <i class="fas fa-image"></i> เซฟรูปลงเครื่อง
+            <div class="bg-slate-50 p-4 border-t flex gap-3">
+                <button onclick="shareDigitalReceipt()" class="flex-1 bg-teal-600 hover:bg-teal-700 text-white font-bold py-2.5 rounded-xl text-xs transition-all flex items-center justify-center gap-2">
+                    <i class="fas fa-share-alt"></i> คัดลอกข้อความแชร์สลิป
                 </button>
-                <button onclick="shareDigitalReceipt()" class="bg-teal-600 hover:bg-teal-700 text-white font-bold py-2.5 px-2 rounded-xl text-xs transition-all flex items-center justify-center gap-1.5 shadow">
-                    <i class="fas fa-copy"></i> ก๊อบปี้ข้อความ
+                <button onclick="downloadReceiptImage()" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 px-4 rounded-xl text-xs transition-all flex items-center justify-center gap-2 shadow">
+                    <i class="fas fa-image"></i> เซฟรูป
                 </button>
-                <button onclick="printReceipt()" class="bg-slate-800 hover:bg-slate-700 text-white font-bold py-2.5 px-2 rounded-xl text-xs transition-all flex items-center justify-center gap-1.5 shadow">
+                <button onclick="printReceipt()" class="bg-slate-800 hover:bg-slate-700 text-white font-semibold py-2.5 px-4 rounded-xl text-xs transition-all flex items-center justify-center gap-2">
                     <i class="fas fa-print"></i> พิมพ์
                 </button>
             </div>
@@ -1348,9 +1352,10 @@ ${currentViewingOrder.details}
         async function sendWebhookWithRetry(url, data, retries = 5, delay = 1000) {
             for (let i = 0; i < retries; i++) {
                 try {
+                    // ปรับโครงสร้าง parameter เพื่อส่งผ่าน Google Web App ให้เข้ากันได้ดีที่สุด
                     const response = await fetch(url, {
                         method: 'POST',
-                        mode: 'no-cors', 
+                        mode: 'no-cors', // มีความจำเป็นสำหรับ Google Apps Script เพื่อหลีกเลี่ยง CORS block บนเบราว์เซอร์หลัก
                         cache: 'no-cache',
                         headers: {
                             'Content-Type': 'text/plain;charset=utf-8' 
@@ -1367,15 +1372,77 @@ ${currentViewingOrder.details}
             }
         }
 
+        // --- ฟังก์ชันใหม่: ดึงข้อมูลจาก Google Sheets (Sync) ---
+        async function importFromGoogleSheet() {
+            if (!sheetSettings.url) {
+                showToast("⚠️ กรุณาตั้งค่า URL ของ Google Sheets API ในหน้าตั้งค่าก่อน", "error");
+                switchTab('settings');
+                return;
+            }
+
+            showToast("⏳ กำลังเชื่อมต่อเพื่อดึงข้อมูลออเดอร์ทั้งหมด...");
+
+            try {
+                // สำหรับ GET request เราไม่ต้องใช้ no-cors เพื่อให้สามารถอ่าน Response JSON ได้
+                const response = await fetch(sheetSettings.url, {
+                    method: 'GET',
+                });
+                
+                const result = await response.json();
+                
+                if (result && result.status === 'success') {
+                    const cloudOrders = result.data;
+                    
+                    if(cloudOrders.length === 0) {
+                        showToast("ℹ️ ยังไม่มีข้อมูลใน Google Sheets");
+                        return;
+                    }
+
+                    // รวมข้อมูล: นำข้อมูลคลาวด์มาผสานกับข้อมูลในเครื่อง (ใช้ ID เป็นตัวกรองไม่ให้ซ้ำ)
+                    const existingIds = new Set(orders.map(o => o.id));
+                    let newOrdersCount = 0;
+
+                    cloudOrders.forEach(cloudOrder => {
+                        if (!existingIds.has(cloudOrder.id)) {
+                            orders.push(cloudOrder);
+                            newOrdersCount++;
+                        }
+                    });
+
+                    // จัดเรียงตามวันที่และเวลาล่าสุดใหม่อีกครั้ง
+                    orders.sort((a, b) => {
+                        const dateA = new Date(a.date + 'T' + a.time);
+                        const dateB = new Date(b.date + 'T' + b.time);
+                        return dateB - dateA;
+                    });
+
+                    // บันทึกลงเครื่องและอัปเดตหน้าจอ
+                    saveOrdersToStorage();
+                    loadOrdersHistory();
+                    updateDailyStats();
+                    updateNextOrderIdLabel();
+                    
+                    if (document.getElementById('tab-content-dashboard') && !document.getElementById('tab-content-dashboard').classList.contains('hidden')) {
+                        generateDashboardReport('week');
+                    }
+
+                    showToast(`✅ ดึงข้อมูลสำเร็จ! ได้ออเดอร์ใหม่เพิ่มมา ${newOrdersCount} รายการ`);
+                } else {
+                    showToast("⚠️ ดึงข้อมูลไม่สำเร็จ โปรดตรวจ URL หรือ สิทธิ์", "error");
+                }
+            } catch (error) {
+                showToast("❌ การเชื่อมต่อล้มเหลว ตรวจสอบอินเทอร์เน็ตหรือ URL", "error");
+                console.error(error);
+            }
+        }
+
         function copyAppsScriptCode() {
             const scriptCode = 
 `function doPost(e) {
   try {
     var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
-    var contents = e.postData.contents;
-    var payload = JSON.parse(contents);
+    var payload = JSON.parse(e.postData.contents);
     
-    // สร้างหัวตารางให้อัตโนมัติหากเป็นสเปรดชีตเปล่า
     if (sheet.getLastRow() === 0) {
       sheet.appendRow(["วันที่บันทึก", "เลขที่ออเดอร์", "เวลาบริการ", "ชื่อลูกค้า", "ประเภทบริการหลัก", "รายละเอียดทั้งหมด", "ราคาค่าบริการ (บาท)"]);
     }
@@ -1388,10 +1455,35 @@ ${currentViewingOrder.details}
       sheet.appendRow([payload.date, payload.id, payload.time, payload.customer, payload.service, payload.details, payload.price]);
     }
     
-    // ตอบกลับเพื่อยืนยันสถานะการทำงานสำเร็จ
-    return ContentService.createTextOutput(JSON.stringify({ status: "success", message: "บันทึกเรียบร้อย" }))
+    return ContentService.createTextOutput(JSON.stringify({ status: "success" }))
       .setMimeType(ContentService.MimeType.JSON);
-      
+  } catch (err) {
+    return ContentService.createTextOutput(JSON.stringify({ status: "error", message: err.toString() }))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+}
+
+function doGet(e) {
+  try {
+    var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
+    var data = sheet.getDataRange().getValues();
+    var result = [];
+    for (var i = 1; i < data.length; i++) {
+      if(data[i][1] !== "") {
+        result.push({
+          date: data[i][0],
+          id: data[i][1],
+          time: data[i][2],
+          customer: data[i][3],
+          service: data[i][4],
+          details: data[i][5],
+          price: Number(data[i][6])
+        });
+      }
+    }
+    result.reverse();
+    return ContentService.createTextOutput(JSON.stringify({ status: "success", data: result }))
+      .setMimeType(ContentService.MimeType.JSON);
   } catch (err) {
     return ContentService.createTextOutput(JSON.stringify({ status: "error", message: err.toString() }))
       .setMimeType(ContentService.MimeType.JSON);
